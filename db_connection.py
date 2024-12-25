@@ -47,5 +47,5 @@ class MongoDBConnection:
         self.close()
 
 # 使用範例
-def create_connection(connection_string: str = 'your_connection_string') -> MongoDBConnection:
-    return MongoDBConnection(connection_string, 'db_prod')
+def create_connection(connection_string: str = 'your_connection_string', database_name: str = 'RD-Nxmap') -> MongoDBConnection:
+    return MongoDBConnection(connection_string, database_name)
