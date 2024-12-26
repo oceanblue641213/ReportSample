@@ -24,6 +24,13 @@ class MongoDBConnection:
         return self._db['total_Emission']
     
     @property
+    def ghg_report(self) -> Collection:
+        return self._db['ghg_report']
+    @property
+    def system_sub_categories(self) -> Collection:
+        return self._db['system-sub-categories']
+    
+    @property
     def translations(self) -> Collection:
         return self._db['translations']
     
@@ -33,6 +40,8 @@ class MongoDBConnection:
             'company_assets': self.company_assets,
             'onboarding_ratings': self.onboarding_ratings,
             'total_Emission': self.total_Emission,
+            'ghg_report': self.ghg_report,
+            'system_sub_categories': self.system_sub_categories,
             'translations': self.translations
         }
     

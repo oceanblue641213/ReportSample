@@ -1,8 +1,7 @@
-from typing import List
 from bson import ObjectId
 
 def get_onbording_ratings_data(table, company_id: str) -> dict:
-    query = {'companyId': company_id}
+    query = {'companyId': ObjectId(company_id)}
     projection = {
         '_id': 0,  # 排除 _id
         'companyId': 1,
