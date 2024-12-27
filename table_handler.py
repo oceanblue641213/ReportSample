@@ -1,3 +1,5 @@
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+
 def organization_boundaries_setting_range_2_1_1(data):
     result = [(item.get('companyName'), item.get('address', "")) for item in data]
     
@@ -30,6 +32,71 @@ def indirect_ghg_emission_evaluation_2_3_3(data, categories):
             ]
     
     return result
+
+def seven_ghg_emission_3_2_1(table, raw_data):
+    total_gwp = raw_data['totalGWPEmissionValue']
+    
+    # 取出其他的值並計算每個值占總值的百分比
+    values_and_percentages = [
+        [value, str(round((value / total_gwp) * 100, 2)) + '%'] 
+        for key, value in raw_data.items() 
+    ]
+    
+    keys = [key for key in raw_data]
+    values = [raw_data[key] for key in keys]
+    percentages = [str(round((value / total_gwp) * 100, 2)) + '%' for value in values]
+    data = [values, percentages]
+    
+    for i, row_data in enumerate(data, start=1):
+        for j, cell_data in enumerate(row_data, start=1):
+            if j < len(table.columns):  # 確保不超過列數
+                cell = table.cell(i, j)
+                cell.text = ""
+                paragraph = cell.paragraphs[0]
+                cell_data = str(cell_data)
+                run = paragraph.add_run(cell_data)
+                paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+def ghg_emission_list_3_2_2(table, raw_data, category1_total, total_emissions):
+    table.cell(2,1).text = ""
+    table.cell(2,1).text = str(category1_total)
+    table.cell(2,1).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(2,5).text = ""
+    table.cell(2,5).text = str(raw_data['totalCategories2Value'])
+    table.cell(2,5).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(2,6).text = ""
+    table.cell(2,6).text = str(raw_data['totalCategories3Value'])
+    table.cell(2,6).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(2,7).text = ""
+    table.cell(2,7).text = str(raw_data['totalCategories4Value'])
+    table.cell(2,7).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(2,8).text = ""
+    table.cell(2,8).text = str(total_emissions)
+    table.cell(2,8).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(4,1).text = ""
+    table.cell(4,1).text = str(f"{(category1_total/total_emissions*100):.2f}%")
+    table.cell(4,1).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(4,5).text = ""
+    table.cell(4,5).text = str(f"{(raw_data['totalCategories2Value']/total_emissions*100):.2f}%")
+    table.cell(4,5).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(4,6).text = ""
+    table.cell(4,6).text = str(f"{(raw_data['totalCategories3Value']/total_emissions*100):.2f}%")
+    table.cell(4,6).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(4,7).text = ""
+    table.cell(4,7).text = str(f"{(raw_data['totalCategories4Value']/total_emissions*100):.2f}%")
+    table.cell(4,7).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(5,1).text = ""
+    table.cell(5,1).text = str(f"{(raw_data['totalStationaryCombustionValue']/total_emissions*100):.2f}%")
+    table.cell(5,1).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(5,2).text = ""
+    table.cell(5,2).text = str(f"{(raw_data['totalIndustrialProcesses']/total_emissions*100):.2f}%")
+    table.cell(5,2).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(5,3).text = ""
+    table.cell(5,3).text = str(f"{(raw_data['totalMobileCombustionValue']/total_emissions*100):.2f}%")
+    table.cell(5,3).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table.cell(5,4).text = ""
+    table.cell(5,4).text = str(f"{(raw_data['totalRefrigerantsFugitives']/total_emissions*100):.2f}%")
+    table.cell(5,4).paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
 
 def direct_ghg_emission_3_3_1(data):
     # 首先過濾出 scope 為 1 的資料，並依照 scopeName 分組

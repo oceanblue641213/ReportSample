@@ -20,8 +20,8 @@ class MongoDBConnection:
         return self._db['onbording-ratings']
     
     @property
-    def total_Emission(self) -> Collection:
-        return self._db['total_Emission']
+    def new_total_emission(self) -> Collection:
+        return self._db['new_total_emission']
     
     @property
     def ghg_report(self) -> Collection:
@@ -39,7 +39,7 @@ class MongoDBConnection:
             'site_modules': self.site_modules,
             'company_assets': self.company_assets,
             'onboarding_ratings': self.onboarding_ratings,
-            'total_Emission': self.total_Emission,
+            'new_total_emission': self.new_total_emission,
             'ghg_report': self.ghg_report,
             'system_sub_categories': self.system_sub_categories,
             'translations': self.translations

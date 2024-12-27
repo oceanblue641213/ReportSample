@@ -7,10 +7,13 @@ from site_modules import get_site_modules_data
 from onbording_ratings import get_onbording_ratings_data
 from company_assets import get_company_assets_data
 from ghg_reports import get_ghg_reports_data
+from new_total_emission import get_new_total_emission_data
 from table_handler import (
     organization_boundaries_setting_range_2_1_1, 
     ghg_emission_list_2_3_1, 
-    indirect_ghg_emission_evaluation_2_3_3, 
+    indirect_ghg_emission_evaluation_2_3_3,
+    seven_ghg_emission_3_2_1,
+    ghg_emission_list_3_2_2,
     direct_ghg_emission_3_3_1,
     indirect_ghg_emission_3_3_3
     )
@@ -33,17 +36,17 @@ def main():
     with conn(conn_string, db_name) as db:
         try:
             all_collections = db.get_all_collections()
-            site_modules, company_assets, onboarding_ratings, total_Emission, ghg_report, system_sub_categories, translations = (
+            site_modules, company_assets, onboarding_ratings, new_total_emission, ghg_report, system_sub_categories, translations = (
             all_collections['site_modules'],
             all_collections['company_assets'],
             all_collections['onboarding_ratings'],
-            all_collections['total_Emission'],
+            all_collections['new_total_emission'],
             all_collections['ghg_report'],
             all_collections['system_sub_categories'],
             all_collections['translations']
             )
             
-            categories = get_system_sub_categories_data(system_sub_categories)
+            all_categories, categories_without_1 = get_system_sub_categories_data(system_sub_categories)
             all_site_modules_datas = get_site_modules_data(site_modules, company_id, fields=['companyName', 'levelStatus', 'usedRegion', 'address', 'EFGroup'])
             all_site_modules_ids = [item.get('_id') for item in all_site_modules_datas]
             sorted_data = sorted(all_site_modules_datas, key=lambda x: x.get('levelStatus') != 'parent')
@@ -52,8 +55,27 @@ def main():
             parent_rating = get_onbording_ratings_data(onboarding_ratings, parent.get('_id'))
             all_company_assets = get_company_assets_data(company_assets, all_site_modules_ids)
             all_ghg_reports_datas = get_ghg_reports_data(ghg_report, parent.get('_id'), fields=['emissionFactors']).get('emissionFactors')
+            totals, ghg_emission_tables, direct_ghg_emission = get_new_total_emission_data(new_total_emission, all_categories, all_site_modules_ids)
             
             print("開始:")
+            
+            # 計算
+            totalStationaryCombustionValue = ghg_emission_tables['totalStationaryCombustionValue']
+            totalIndustrialProcesses = ghg_emission_tables['totalIndustrialProcesses']
+            totalMobileCombustionValue = ghg_emission_tables['totalMobileCombustionValue']
+            totalRefrigerantsFugitives = ghg_emission_tables['totalRefrigerantsFugitives']
+            totalCategories2Value = ghg_emission_tables['totalCategories2Value']
+            totalCategories3Value = ghg_emission_tables['totalCategories3Value']
+            totalCategories4Value = ghg_emission_tables['totalCategories4Value']
+            category1TotalEmissionValue = totalStationaryCombustionValue + totalIndustrialProcesses + totalMobileCombustionValue + totalRefrigerantsFugitives
+            totalEmissionValue = category1TotalEmissionValue + totalCategories2Value + totalCategories3Value + totalCategories4Value
+            category1TotalEmissionRatio = round(category1TotalEmissionValue/totalEmissionValue, 2)
+            
+            category1TotalAmountEmission = direct_ghg_emission['totalGWPEmissionValue']
+            largestAmountEmission = direct_ghg_emission['co2GWPEmissionValue']
+            largestAmountEmissionRatio = round(largestAmountEmission/category1TotalAmountEmission, 2)
+            secondLargestAmountEmission = direct_ghg_emission['ch4GWPEmissionValue']
+            secondLargestAmountEmissionRatio = round(secondLargestAmountEmission/category1TotalAmountEmission, 2)
             
             replacements = {
             '[company]': parent.get('companyName'),
@@ -65,6 +87,23 @@ def main():
                 + parent_rating.get('baseYearPeriodEnd').strftime('%Y年%m月%d日'),
             '[onbording_ratings_type]': parent_rating.get('type'),
             '[threshold]': str(parent_rating.get('threshold')),
+            '[total_ghg_amount]': str(totals['totalGWPEmissionValue']),
+            '[total_co2_amount]': str(totals['co2GWPEmissionValue']),
+            '[total_co2_ration]': str(round(totals['co2GWPEmissionValue']/totals['totalGWPEmissionValue'], 2)),
+            '[total_ch4_amount]': str(totals['ch4GWPEmissionValue']),
+            '[total_ch4_ration]': str(round(totals['ch4GWPEmissionValue']/totals['totalGWPEmissionValue'], 2)),
+            '[direct_ghg_emission]': str(category1TotalEmissionValue),
+            '[direct_ghg_emission_ratio]': str(round(category1TotalEmissionValue/totalEmissionValue, 2)),
+            '[largestAmountEmission]': str(largestAmountEmission),
+            '[largestAmountEmissionRatio]': str(largestAmountEmissionRatio),
+            '[secondLargestAmountEmission]': str(secondLargestAmountEmission),
+            '[secondLargestAmountEmissionRatio]': str(secondLargestAmountEmissionRatio),
+            '[category1TotalAmountEmission]': str(category1TotalAmountEmission),
+            '[category1TotalEmissionRatio]': str(category1TotalEmissionRatio),
+            '[largestAmountEmission]': str(largestAmountEmission),
+            '[largestAmountEmissionRatio]': str(largestAmountEmissionRatio),
+            '[secondLargestAmountEmission]': str(secondLargestAmountEmission),
+            '[secondLargestAmountEmissionRatio]': str(secondLargestAmountEmissionRatio),
             }
             
             # 打開文檔
@@ -80,11 +119,17 @@ def main():
             table01_data = ghg_emission_list_2_3_1(all_ghg_reports_datas)
             replace_table(doc.tables[1], table01_data, n = 2)
             
-            table02_data = indirect_ghg_emission_evaluation_2_3_3(parent_rating, categories)
+            table02_data = indirect_ghg_emission_evaluation_2_3_3(parent_rating, categories_without_1)
             replace_table(doc.tables[2], table02_data, n = 1, h = 2)
+            
+            table04_data = seven_ghg_emission_3_2_1(doc.tables[4], totals)
+            
+            table05_data = ghg_emission_list_3_2_2(doc.tables[5], ghg_emission_tables, category1TotalEmissionValue, totalEmissionValue)
             
             table06_data = direct_ghg_emission_3_3_1(all_company_assets)
             replace_table(doc.tables[6], table06_data)
+            
+            table07_data = seven_ghg_emission_3_2_1(doc.tables[7], direct_ghg_emission)
             
             table08_data = indirect_ghg_emission_3_3_3(all_company_assets)
             replace_table(doc.tables[8], table08_data)
