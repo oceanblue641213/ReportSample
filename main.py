@@ -1,4 +1,4 @@
-import upload_file as upf
+import replace_text as rt
 from db_connection import create_connection as conn
 import datetime
 from dotenv import load_dotenv
@@ -131,7 +131,7 @@ def main():
             doc = Document('溫室氣體盤查報告書v2.0.docx')
             
             # 替換文本
-            upf.replace_text_in_word(doc, replacements)
+            rt.replace_text_in_word(doc, replacements)
             
             # 替換表格
             table00_data = organization_boundaries_setting_range_2_1_1(sorted_data)

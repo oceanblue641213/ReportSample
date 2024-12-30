@@ -1,8 +1,7 @@
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 import redis
 from pymongo import MongoClient
 from datetime import datetime
-import json
 
 class I18nService:
     def __init__(
