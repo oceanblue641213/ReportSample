@@ -31,8 +31,8 @@ class MongoDBConnection:
         return self._db['system-sub-categories']
     
     @property
-    def translations(self) -> Collection:
-        return self._db['translations']
+    def new_translations(self) -> Collection:
+        return self._db['new_translations']
     
     def get_all_collections(self) -> Dict[str, Collection]:
         return {
@@ -42,7 +42,7 @@ class MongoDBConnection:
             'new_total_emission': self.new_total_emission,
             'ghg_report': self.ghg_report,
             'system_sub_categories': self.system_sub_categories,
-            'translations': self.translations
+            'new_translations': self.new_translations
         }
     
     def close(self):

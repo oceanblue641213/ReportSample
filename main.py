@@ -8,6 +8,7 @@ from onbording_ratings import get_onbording_ratings_data
 from company_assets import get_company_assets_data
 from ghg_reports import get_ghg_reports_data
 from new_total_emission import get_new_total_emission_data
+import transfer_language as tl
 from table_handler import (
     organization_boundaries_setting_range_2_1_1, 
     ghg_emission_list_2_3_1, 
@@ -32,18 +33,21 @@ def main():
     load_dotenv()  # 讀取 .env 文件中的環境變數
     conn_string = os.getenv('DB_CONNECTIONSTRING')
     db_name = os.getenv('DB_NAME')
+    redis_host = os.getenv('REDIS_HOST', 'localhost')
+    redis_port = int(os.getenv('REDIS_PORT', 6379))
+    redis_password = os.getenv('REDIS_PASSWORD', '12345678')
     
     with conn(conn_string, db_name) as db:
         try:
             all_collections = db.get_all_collections()
-            site_modules, company_assets, onboarding_ratings, new_total_emission, ghg_report, system_sub_categories, translations = (
+            site_modules, company_assets, onboarding_ratings, new_total_emission, ghg_report, system_sub_categories, new_translations = (
             all_collections['site_modules'],
             all_collections['company_assets'],
             all_collections['onboarding_ratings'],
             all_collections['new_total_emission'],
             all_collections['ghg_report'],
             all_collections['system_sub_categories'],
-            all_collections['translations']
+            all_collections['new_translations']
             )
             
             all_categories, categories_without_1 = get_system_sub_categories_data(system_sub_categories)
@@ -56,6 +60,23 @@ def main():
             all_company_assets = get_company_assets_data(company_assets, all_site_modules_ids)
             all_ghg_reports_datas = get_ghg_reports_data(ghg_report, parent.get('_id'), fields=['emissionFactors']).get('emissionFactors')
             totals, ghg_emission_tables, direct_ghg_emission = get_new_total_emission_data(new_total_emission, all_categories, all_site_modules_ids)
+            
+            i18n_service = tl.I18nService(
+                mongodb_uri=conn_string,
+                db_name=db_name,
+                collection_name='new_translations',
+                redis_host='localhost',
+                redis_port=redis_port,
+                redis_password=redis_password
+            )
+            
+            products = [{
+                'Industry': 'Industry',
+                'Carbon Footprint': 'Carbon Footprint'
+            }]
+
+            # 翻譯產品資料
+            translated_products = i18n_service.translate_documents(products, "tw")
             
             print("開始:")
             
@@ -189,4 +210,27 @@ if __name__ == '__main__':
     main()
 
 
-    
+# def transfer_language(translations, new_translations):
+#         print("開始翻譯")
+#         # 讀取所有的語系資料
+#         translations = translations.find()
+
+#         # 迭代每個語系資料，轉換格式
+#         for translation in translations:
+#             for lang_data in translation['tran']:  # 每個語系資料
+#                 lang = lang_data['name']  # 獲取語系名稱（如 "en", "de", 等）
+#                 translations_data = lang_data['data']  # 獲取對應語系的翻譯資料
+                
+#                 # 構建新結構
+#                 new_translation = {
+#                     "lang": lang,
+#                     "translations": translations_data
+#                 }
+                
+#                 # 插入或更新資料到 new_translations 表格
+#                 new_translations.update_one(
+#                     {"lang": lang},  # 根據語系查詢
+#                     {"$set": new_translation},  # 如果已經存在相同語系，則進行覆蓋
+#                     upsert=True  # 如果找不到資料，則新增
+#                 )
+#         print("結束翻譯")
